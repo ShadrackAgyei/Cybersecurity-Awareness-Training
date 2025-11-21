@@ -21,6 +21,15 @@ An interactive, web-based cybersecurity awareness training platform featuring re
 
 - **Progress Tracking**: Visual indicators showing completion status and score
 
+- **Admin Analytics Dashboard**: Comprehensive analytics and insights including:
+  - Total sessions and average performance metrics
+  - Performance breakdown by difficulty level
+  - Category-specific success rates (phishing, passwords, social engineering, etc.)
+  - Individual scenario performance tracking
+  - Recent session history
+  - Data export functionality
+  - Beautiful data visualizations with color-coded performance indicators
+
 - **Premium Design**: Apple-inspired UI with:
   - Smooth animations and transitions
   - Frosted glass effects (backdrop-blur)
@@ -71,12 +80,26 @@ npm run preview
 
 ## 🎮 How to Use
 
-1. **Welcome Screen**: Click "Begin Training" to start
+1. **Welcome Screen**: Click "Begin Training" to start or "View Analytics" to see performance data
 2. **Choose Difficulty**: Select Beginner, Intermediate, or Advanced
 3. **Complete Scenarios**: Read each situation and choose your response
 4. **Learn from Feedback**: Review explanations for each choice
 5. **Track Progress**: Monitor your score and completion status
 6. **View Results**: See your final score and performance breakdown
+7. **Access Analytics**: Click "View Analytics" from the welcome screen to see comprehensive performance data
+
+### 📊 Analytics Dashboard
+
+The admin analytics dashboard provides detailed insights into training performance:
+
+- **Overview Metrics**: Total sessions, average scores, and overall performance
+- **Difficulty Analysis**: Compare success rates across beginner, intermediate, and advanced levels
+- **Category Performance**: Track strengths and weaknesses in specific security topics
+- **Scenario Insights**: Identify which scenarios users find most challenging
+- **Session History**: Review recent training completions with timestamps
+- **Data Management**: Export analytics data or clear all session data
+
+All data is stored locally in your browser using localStorage.
 
 ## 🎨 Design Philosophy
 

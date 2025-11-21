@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Mail, Lock, Users, Wifi, Usb, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Trophy, Target } from 'lucide-react';
+import { Shield, Mail, Lock, Users, Wifi, Usb, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Trophy, Target, BarChart3 } from 'lucide-react';
+import AdminDashboard from './AdminDashboard';
+import { saveSessionData } from './analytics';
 
 const CybersecurityTrainingApp = () => {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -9,6 +11,7 @@ const CybersecurityTrainingApp = () => {
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [completedScenarios, setCompletedScenarios] = useState([]);
+  const [scenarioResults, setScenarioResults] = useState([]);
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
@@ -21,6 +24,7 @@ const CybersecurityTrainingApp = () => {
         id: 1,
         icon: Mail,
         title: 'Suspicious Email',
+        category: 'phishing',
         situation: 'You receive an email from "IT Support" asking you to click a link to verify your account credentials. The email has your company logo but the sender\'s email is "support@company-verify.net".',
         choices: [
           {
@@ -47,6 +51,7 @@ const CybersecurityTrainingApp = () => {
         id: 2,
         icon: Lock,
         title: 'Password Creation',
+        category: 'password',
         situation: 'You need to create a new password for your work account. Which approach is most secure?',
         choices: [
           {
@@ -73,6 +78,7 @@ const CybersecurityTrainingApp = () => {
         id: 3,
         icon: Users,
         title: 'Social Engineering Call',
+        category: 'social-engineering',
         situation: 'Someone calls claiming to be from your bank, saying there\'s suspicious activity on your account. They ask for your account number to "verify your identity".',
         choices: [
           {
@@ -101,6 +107,7 @@ const CybersecurityTrainingApp = () => {
         id: 4,
         icon: Wifi,
         title: 'Public WiFi',
+        category: 'network',
         situation: 'You\'re at a coffee shop and need to access your work email. You see two WiFi networks: "CoffeeShop_Guest" and "CoffeeShop_Free_WiFi". What\'s your best approach?',
         choices: [
           {
@@ -127,6 +134,7 @@ const CybersecurityTrainingApp = () => {
         id: 5,
         icon: Usb,
         title: 'Found USB Drive',
+        category: 'physical',
         situation: 'You find a USB drive in the parking lot labeled "Executive Salary Information - Confidential". What should you do?',
         choices: [
           {
@@ -153,6 +161,7 @@ const CybersecurityTrainingApp = () => {
         id: 6,
         icon: AlertTriangle,
         title: 'Data Breach Notification',
+        category: 'incident-response',
         situation: 'You receive a notification that a website where you have an account was breached. Your email and password may have been exposed. What should you do first?',
         choices: [
           {
@@ -181,6 +190,7 @@ const CybersecurityTrainingApp = () => {
         id: 7,
         icon: AlertTriangle,
         title: 'Ransomware Attack',
+        category: 'incident-response',
         situation: 'Your computer suddenly displays a message claiming all files are encrypted and demanding Bitcoin payment within 48 hours. Your recent work is on this machine. What\'s your best response?',
         choices: [
           {
@@ -207,6 +217,7 @@ const CybersecurityTrainingApp = () => {
         id: 8,
         icon: Shield,
         title: 'Two-Factor Authentication',
+        category: 'authentication',
         situation: 'Your company is implementing 2FA. You receive a 2FA code via SMS while NOT trying to log in. What should you do?',
         choices: [
           {
@@ -233,6 +244,7 @@ const CybersecurityTrainingApp = () => {
         id: 9,
         icon: Users,
         title: 'Advanced Phishing',
+        category: 'phishing',
         situation: 'You receive a DocuSign notification to review an urgent contract. The email looks perfect, uses correct branding, and you were expecting contract documents. However, you notice the "Review Document" button URL (on hover) shows "docusign-secure.net" instead of "docusign.com".',
         choices: [
           {
@@ -270,6 +282,16 @@ const CybersecurityTrainingApp = () => {
       setScore(score + 1);
     }
     setCompletedScenarios([...completedScenarios, currentScenarioIndex]);
+
+    // Track scenario result for analytics
+    const result = {
+      scenarioId: currentScenario.id,
+      scenarioTitle: currentScenario.title,
+      category: currentScenario.category,
+      isCorrect: choice.isCorrect,
+      choiceIndex
+    };
+    setScenarioResults([...scenarioResults, result]);
   };
 
   const handleNextScenario = () => {
@@ -281,6 +303,16 @@ const CybersecurityTrainingApp = () => {
         setShowResult(false);
         setFadeIn(true);
       } else {
+        // Save session data when training completes
+        const sessionData = {
+          difficulty,
+          score,
+          totalScenarios,
+          percentage: (score / totalScenarios) * 100,
+          scenarioResults
+        };
+        saveSessionData(sessionData);
+
         setCurrentScreen('completion');
         setFadeIn(true);
       }
@@ -293,6 +325,7 @@ const CybersecurityTrainingApp = () => {
     setCurrentScenarioIndex(0);
     setScore(0);
     setCompletedScenarios([]);
+    setScenarioResults([]);
     setSelectedChoice(null);
     setShowResult(false);
   };
@@ -304,11 +337,17 @@ const CybersecurityTrainingApp = () => {
       setCurrentScenarioIndex(0);
       setScore(0);
       setCompletedScenarios([]);
+      setScenarioResults([]);
       setSelectedChoice(null);
       setShowResult(false);
       setFadeIn(true);
     }, 300);
   };
+
+  // Admin Dashboard Screen
+  if (currentScreen === 'admin') {
+    return <AdminDashboard onBack={() => setCurrentScreen('welcome')} />;
+  }
 
   // Welcome Screen
   if (currentScreen === 'welcome') {
@@ -357,13 +396,23 @@ const CybersecurityTrainingApp = () => {
               </div>
             </div>
 
-            <button
-              onClick={() => setCurrentScreen('difficulty')}
-              className="group px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium text-lg shadow-lg shadow-blue-200 transition-all duration-300 hover:scale-105 hover:shadow-xl inline-flex items-center space-x-2"
-            >
-              <span>Begin Training</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+            <div className="space-y-4">
+              <button
+                onClick={() => setCurrentScreen('difficulty')}
+                className="group px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium text-lg shadow-lg shadow-blue-200 transition-all duration-300 hover:scale-105 hover:shadow-xl inline-flex items-center space-x-2"
+              >
+                <span>Begin Training</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <button
+                onClick={() => setCurrentScreen('admin')}
+                className="group px-6 py-3 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-blue-300 text-gray-700 rounded-2xl font-medium transition-all hover:shadow-lg inline-flex items-center space-x-2"
+              >
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                <span>View Analytics</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -661,6 +710,7 @@ const CybersecurityTrainingApp = () => {
                   setCurrentScenarioIndex(0);
                   setScore(0);
                   setCompletedScenarios([]);
+                  setScenarioResults([]);
                   setSelectedChoice(null);
                   setShowResult(false);
                   setCurrentScreen('scenario');
