@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Mail, Lock, Users, Wifi, Usb, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Trophy, Target, BarChart3, UserPlus, LogIn } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import { saveSessionData } from './analytics';
-import { cleanupExpiredLobbies, saveLobbySession } from './utils/lobbyManagement';
+import { cleanupExpiredLobbies, saveLobbySession, getLobby } from './utils/lobbyManagement';
 import { isPinSet } from './utils/pinProtection';
 import CreateLobbyForm from './components/lobby/CreateLobbyForm';
 import LobbyDashboard from './components/lobby/LobbyDashboard';
@@ -422,7 +422,6 @@ const CybersecurityTrainingApp = () => {
     // Get difficulty from lobby and start training
     const lobbyCode = sessionStorage.getItem('currentLobbyCode');
     if (lobbyCode) {
-      const { getLobby } = require('./utils/lobbyManagement');
       const lobby = getLobby(lobbyCode);
       if (lobby) {
         setDifficulty(lobby.difficulty);
