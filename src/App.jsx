@@ -1,3 +1,16 @@
+import React, { useState, useEffect } from 'react';
+import { Shield, Mail, Lock, Users, Wifi, Usb, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Trophy, Target, BarChart3, UserPlus, LogIn } from 'lucide-react';
+import AdminDashboard from './AdminDashboard';
+import { saveSessionData } from './analytics';
+import { cleanupExpiredLobbies, saveLobbySession, getLobby } from './utils/lobbyManagement';
+import { isPinSet } from './utils/pinProtection';
+import CreateLobbyForm from './components/lobby/CreateLobbyForm';
+import LobbyDashboard from './components/lobby/LobbyDashboard';
+import JoinLobbyFlow from './components/lobby/JoinLobbyFlow';
+import WaitingRoom from './components/lobby/WaitingRoom';
+import SetPinModal from './components/pin/SetPinModal';
+import EnterPinModal from './components/pin/EnterPinModal';
+import Toast from './components/shared/Toast';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, Mail, Lock, Users, Wifi, Usb, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Trophy, Target, BarChart3 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
@@ -23,6 +36,39 @@ const CybersecurityTrainingApp = () => {
   const [lobbyCode, setLobbyCode] = useState(null);
   const [username, setUsername] = useState(null);
   const [userRole, setUserRole] = useState(null);
+
+  // Lobby-related state
+  const [currentLobbyCode, setCurrentLobbyCode] = useState(null);
+  const [currentUsername, setCurrentUsername] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+
+  // PIN modal state
+  const [showSetPinModal, setShowSetPinModal] = useState(false);
+  const [showEnterPinModal, setShowEnterPinModal] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // Initialize app and cleanup expired lobbies
+  useEffect(() => {
+    cleanupExpiredLobbies();
+
+    // Check for existing session
+    const lobbyCode = sessionStorage.getItem('currentLobbyCode');
+    const username = sessionStorage.getItem('currentUsername');
+    const role = sessionStorage.getItem('userRole');
+
+    if (lobbyCode && username && role) {
+      setCurrentLobbyCode(lobbyCode);
+      setCurrentUsername(username);
+      setUserRole(role);
+
+      // Redirect to appropriate screen
+      if (role === 'moderator') {
+        setCurrentScreen('lobbyDashboard');
+      } else if (role === 'participant') {
+        setCurrentScreen('waitingRoom');
+      }
+    }
+  }, []);
 
   // Fade in effect for screen transitions
   useEffect(() => {
@@ -345,6 +391,18 @@ const CybersecurityTrainingApp = () => {
           percentage: (score / totalScenarios) * 100,
           scenarioResults
         };
+
+        // Check if this is a lobby session
+        if (currentLobbyCode && currentUsername) {
+          // Save to lobby
+          saveLobbySession(currentLobbyCode, currentUsername, sessionData);
+          setToast({ message: 'Results saved to lobby!', type: 'success' });
+        } else {
+          // Save to old analytics system (for backward compatibility)
+          saveSessionData(sessionData);
+        }
+
+        setCurrentScreen('completion');
         
         // If in lobby mode, save to lobby; otherwise save to regular analytics
         if (lobbyCode && userRole === 'participant' && username) {
@@ -423,11 +481,108 @@ const CybersecurityTrainingApp = () => {
     }, 300);
   };
 
+  const handleExitSession = () => {
+    // Clear lobby session data
+    sessionStorage.clear();
+    setCurrentLobbyCode(null);
+    setCurrentUsername(null);
+    setUserRole(null);
+    handleRestart();
+  };
+
+  // Lobby navigation handlers
+  const handleLobbyCreated = (code) => {
+    setCurrentLobbyCode(code);
+    setUserRole('moderator');
+    setCurrentScreen('lobbyDashboard');
+  };
+
+  const handleJoined = (code, username) => {
+    setCurrentLobbyCode(code);
+    setCurrentUsername(username);
+    setUserRole('participant');
+    setCurrentScreen('waitingRoom');
+  };
+
+  const handleStartTraining = () => {
+    // Get difficulty from lobby and start training
+    const lobbyCode = sessionStorage.getItem('currentLobbyCode');
+    if (lobbyCode) {
+      const lobby = getLobby(lobbyCode);
+      if (lobby) {
+        setDifficulty(lobby.difficulty);
+      }
+    }
+    setCurrentScreen('scenario');
+    setCurrentScenarioIndex(0);
+    setScore(0);
+    setCompletedScenarios([]);
+    setScenarioResults([]);
+    setSelectedChoice(null);
+    setShowResult(false);
+  };
+
+  const handleNavigateToAnalytics = () => {
+    // Check if PIN is set
+    if (!isPinSet()) {
+      setShowSetPinModal(true);
+    } else {
+      setShowEnterPinModal(true);
+    }
+  };
+
+  const handlePinSetSuccess = () => {
+    setShowSetPinModal(false);
+    setToast({ message: 'PIN set successfully!', type: 'success' });
+    setCurrentScreen('admin');
+  };
+
+  const handlePinVerifySuccess = () => {
+    setShowEnterPinModal(false);
+    setCurrentScreen('admin');
+  };
+
   // Admin Dashboard Screen
   if (currentScreen === 'admin') {
     return <AdminDashboard onBack={() => setCurrentScreen('welcome')} />;
   }
 
+  // Lobby screens
+  if (currentScreen === 'createLobby') {
+    return (
+      <CreateLobbyForm
+        onBack={() => setCurrentScreen('welcome')}
+        onLobbyCreated={handleLobbyCreated}
+      />
+    );
+  }
+
+  if (currentScreen === 'lobbyDashboard') {
+    return (
+      <LobbyDashboard
+        lobbyCode={currentLobbyCode}
+        onNavigateToAnalytics={handleNavigateToAnalytics}
+        onExit={handleExitSession}
+      />
+    );
+  }
+
+  if (currentScreen === 'joinLobby') {
+    return (
+      <JoinLobbyFlow
+        onBack={() => setCurrentScreen('welcome')}
+        onJoined={handleJoined}
+      />
+    );
+  }
+
+  if (currentScreen === 'waitingRoom') {
+    return (
+      <WaitingRoom
+        lobbyCode={currentLobbyCode}
+        username={currentUsername}
+        onStartTraining={handleStartTraining}
+        onLeave={handleExitSession}
   // Create Lobby Screen
   if (currentScreen === 'create-lobby') {
     return <CreateLobbyForm onBack={() => setCurrentScreen('welcome')} onLobbyCreated={handleLobbyCreated} />;
@@ -465,6 +620,20 @@ const CybersecurityTrainingApp = () => {
   if (currentScreen === 'welcome') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center p-4">
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        {showSetPinModal && (
+          <SetPinModal
+            onClose={() => setShowSetPinModal(false)}
+            onSuccess={handlePinSetSuccess}
+          />
+        )}
+        {showEnterPinModal && (
+          <EnterPinModal
+            onClose={() => setShowEnterPinModal(false)}
+            onSuccess={handlePinVerifySuccess}
+          />
+        )}
+
         <div className={`max-w-2xl w-full transition-all duration-700 ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center space-y-8">
             <div className="inline-block p-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl shadow-lg">
@@ -476,7 +645,7 @@ const CybersecurityTrainingApp = () => {
                 Security Awareness
               </h1>
               <p className="text-xl text-gray-600 font-light leading-relaxed max-w-xl mx-auto">
-                Learn essential cybersecurity practices through interactive scenarios
+                Join a training session or create one for your team
               </p>
             </div>
 
@@ -508,13 +677,14 @@ const CybersecurityTrainingApp = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
+            {/* Main action buttons */}
+            <div className="grid md:grid-cols-2 gap-4">
               <button
-                onClick={() => setCurrentScreen('difficulty')}
-                className="group px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium text-lg shadow-lg shadow-blue-200 transition-all duration-300 hover:scale-105 hover:shadow-xl inline-flex items-center space-x-2"
+                onClick={() => setCurrentScreen('createLobby')}
+                className="group px-8 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium text-lg shadow-lg shadow-blue-200 transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-3"
               >
-                <span>Begin Training</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <UserPlus className="w-6 h-6" />
+                <span>Create Lobby</span>
               </button>
 
               <div className="grid grid-cols-2 gap-3">
@@ -536,20 +706,29 @@ const CybersecurityTrainingApp = () => {
               </div>
 
               <button
-                onClick={() => setCurrentScreen('admin')}
-                className="group px-6 py-3 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-blue-300 text-gray-700 rounded-2xl font-medium transition-all hover:shadow-lg inline-flex items-center space-x-2"
+                onClick={() => setCurrentScreen('joinLobby')}
+                className="group px-8 py-5 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-medium text-lg shadow-lg shadow-green-200 transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-3"
               >
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-                <span>View Analytics</span>
+                <LogIn className="w-6 h-6" />
+                <span>Join Lobby</span>
               </button>
             </div>
+
+            {/* Secondary button */}
+            <button
+              onClick={handleNavigateToAnalytics}
+              className="group w-full px-6 py-3 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-blue-300 text-gray-700 rounded-2xl font-medium transition-all hover:shadow-lg inline-flex items-center justify-center space-x-2"
+            >
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              <span>View Analytics</span>
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  // Difficulty Selection Screen
+  // Difficulty Selection Screen (kept for backward compatibility/direct access)
   if (currentScreen === 'difficulty') {
     const levels = [
       {
@@ -634,6 +813,8 @@ const CybersecurityTrainingApp = () => {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-4 py-8">
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
         <div className="max-w-3xl mx-auto">
           {/* Progress Bar */}
           <div className="mb-8 space-y-3">
@@ -768,6 +949,8 @@ const CybersecurityTrainingApp = () => {
       correctPercentage >= 50 ? { text: 'Good Effort!', color: 'text-yellow-600', emoji: '👍' } :
       { text: 'Keep Learning!', color: 'text-orange-600', emoji: '📚' };
 
+    const isLobbySession = currentLobbyCode && currentUsername;
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center p-4">
         <div className={`max-w-2xl w-full transition-all duration-700 ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
@@ -781,7 +964,7 @@ const CybersecurityTrainingApp = () => {
             <div className="space-y-3">
               <h2 className="text-5xl font-semibold text-gray-900">Training Complete!</h2>
               <p className="text-xl text-gray-600 font-light">
-                You've completed all scenarios
+                {isLobbySession ? `Great work, ${currentUsername}!` : "You've completed all scenarios"}
               </p>
             </div>
 
@@ -829,26 +1012,37 @@ const CybersecurityTrainingApp = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={handleRestart}
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium shadow-lg shadow-blue-200 transition-all duration-300 hover:scale-105"
-              >
-                Try Another Level
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentScenarioIndex(0);
-                  setScore(0);
-                  setCompletedScenarios([]);
-                  setScenarioResults([]);
-                  setSelectedChoice(null);
-                  setShowResult(false);
-                  setCurrentScreen('scenario');
-                }}
-                className="px-8 py-4 bg-white/80 backdrop-blur-sm hover:bg-white text-gray-700 rounded-2xl font-medium border-2 border-gray-200 hover:border-gray-300 transition-all duration-300"
-              >
-                Retry This Level
-              </button>
+              {isLobbySession ? (
+                <button
+                  onClick={handleExitSession}
+                  className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium shadow-lg shadow-blue-200 transition-all duration-300 hover:scale-105"
+                >
+                  Exit Session
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleRestart}
+                    className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium shadow-lg shadow-blue-200 transition-all duration-300 hover:scale-105"
+                  >
+                    Try Another Level
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentScenarioIndex(0);
+                      setScore(0);
+                      setCompletedScenarios([]);
+                      setScenarioResults([]);
+                      setSelectedChoice(null);
+                      setShowResult(false);
+                      setCurrentScreen('scenario');
+                    }}
+                    className="px-8 py-4 bg-white/80 backdrop-blur-sm hover:bg-white text-gray-700 rounded-2xl font-medium border-2 border-gray-200 hover:border-gray-300 transition-all duration-300"
+                  >
+                    Retry This Level
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

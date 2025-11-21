@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Lock, X } from 'lucide-react';
-import { setPin } from '../../utils/pinProtection';
+import { setPin as savePinToStorage } from '../../utils/pinProtection';
 
 const SetPinModal = ({ onClose, onSuccess }) => {
   const [pin, setPin] = useState(['', '', '', '']);
@@ -74,7 +74,7 @@ const SetPinModal = ({ onClose, onSuccess }) => {
       return;
     }
 
-    setPin(pinString);
+    savePinToStorage(pinString);
     onSuccess();
   };
 
