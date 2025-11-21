@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, Mail, Lock, Users, Wifi, Usb, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Trophy, Target, BarChart3 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import { saveSessionData } from './analytics';
+import CreateLobbyForm from './components/lobby/CreateLobbyForm';
+import JoinLobbyFlow from './components/lobby/JoinLobbyFlow';
+import LobbyDashboard from './components/lobby/LobbyDashboard';
+import WaitingRoom from './components/lobby/WaitingRoom';
+import { saveLobbySession, cleanupExpiredLobbies, getLobby } from './utils/lobbyManagement';
 
 const CybersecurityTrainingApp = () => {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -13,10 +18,39 @@ const CybersecurityTrainingApp = () => {
   const [completedScenarios, setCompletedScenarios] = useState([]);
   const [scenarioResults, setScenarioResults] = useState([]);
   const [fadeIn, setFadeIn] = useState(false);
+  
+  // Lobby state
+  const [lobbyCode, setLobbyCode] = useState(null);
+  const [username, setUsername] = useState(null);
+  const [userRole, setUserRole] = useState(null);
 
+  // Fade in effect for screen transitions
   useEffect(() => {
     setFadeIn(true);
   }, [currentScreen, currentScenarioIndex]);
+
+  // Initialize lobby state from sessionStorage (only on mount)
+  useEffect(() => {
+    // Cleanup expired lobbies on mount
+    cleanupExpiredLobbies();
+    
+    // Check if user is in a lobby from sessionStorage
+    const storedLobbyCode = sessionStorage.getItem('currentLobbyCode');
+    const storedUsername = sessionStorage.getItem('currentUsername');
+    const storedRole = sessionStorage.getItem('userRole');
+    
+    if (storedLobbyCode && storedRole === 'moderator') {
+      setLobbyCode(storedLobbyCode);
+      setUserRole('moderator');
+      setCurrentScreen('lobby-dashboard');
+    } else if (storedLobbyCode && storedRole === 'participant') {
+      setLobbyCode(storedLobbyCode);
+      setUsername(storedUsername);
+      setUserRole('participant');
+      setCurrentScreen('waiting-room');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const scenarios = {
     beginner: [
@@ -311,9 +345,17 @@ const CybersecurityTrainingApp = () => {
           percentage: (score / totalScenarios) * 100,
           scenarioResults
         };
-        saveSessionData(sessionData);
-
-        setCurrentScreen('completion');
+        
+        // If in lobby mode, save to lobby; otherwise save to regular analytics
+        if (lobbyCode && userRole === 'participant' && username) {
+          saveLobbySession(lobbyCode, username, sessionData);
+          // Also save to regular analytics
+          saveSessionData(sessionData);
+          setCurrentScreen('completion');
+        } else {
+          saveSessionData(sessionData);
+          setCurrentScreen('completion');
+        }
         setFadeIn(true);
       }
     }, 300);
@@ -328,6 +370,43 @@ const CybersecurityTrainingApp = () => {
     setScenarioResults([]);
     setSelectedChoice(null);
     setShowResult(false);
+  };
+
+  // Lobby handlers
+  const handleLobbyCreated = (code) => {
+    setLobbyCode(code);
+    setUserRole('moderator');
+    setCurrentScreen('lobby-dashboard');
+  };
+
+  const handleLobbyJoined = (code, user) => {
+    setLobbyCode(code);
+    setUsername(user);
+    setUserRole('participant');
+    setCurrentScreen('waiting-room');
+  };
+
+  const handleStartTrainingFromLobby = useCallback(() => {
+    // Get difficulty from lobby
+    const lobby = getLobby(lobbyCode);
+    if (lobby) {
+      setDifficulty(lobby.difficulty);
+      setCurrentScenarioIndex(0);
+      setScore(0);
+      setCompletedScenarios([]);
+      setScenarioResults([]);
+      setSelectedChoice(null);
+      setShowResult(false);
+      setCurrentScreen('scenario');
+    }
+  }, [lobbyCode]);
+
+  const handleLeaveLobby = () => {
+    sessionStorage.clear();
+    setLobbyCode(null);
+    setUsername(null);
+    setUserRole(null);
+    setCurrentScreen('welcome');
   };
 
   const handleRestart = () => {
@@ -347,6 +426,39 @@ const CybersecurityTrainingApp = () => {
   // Admin Dashboard Screen
   if (currentScreen === 'admin') {
     return <AdminDashboard onBack={() => setCurrentScreen('welcome')} />;
+  }
+
+  // Create Lobby Screen
+  if (currentScreen === 'create-lobby') {
+    return <CreateLobbyForm onBack={() => setCurrentScreen('welcome')} onLobbyCreated={handleLobbyCreated} />;
+  }
+
+  // Join Lobby Screen
+  if (currentScreen === 'join-lobby') {
+    return <JoinLobbyFlow onBack={() => setCurrentScreen('welcome')} onJoined={handleLobbyJoined} />;
+  }
+
+  // Lobby Dashboard Screen (Moderator)
+  if (currentScreen === 'lobby-dashboard') {
+    return (
+      <LobbyDashboard
+        lobbyCode={lobbyCode}
+        onNavigateToAnalytics={() => setCurrentScreen('admin')}
+        onExit={handleLeaveLobby}
+      />
+    );
+  }
+
+  // Waiting Room Screen (Participant)
+  if (currentScreen === 'waiting-room') {
+    return (
+      <WaitingRoom
+        lobbyCode={lobbyCode}
+        username={username}
+        onStartTraining={handleStartTrainingFromLobby}
+        onLeave={handleLeaveLobby}
+      />
+    );
   }
 
   // Welcome Screen
@@ -404,6 +516,24 @@ const CybersecurityTrainingApp = () => {
                 <span>Begin Training</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setCurrentScreen('create-lobby')}
+                  className="group px-6 py-3 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-green-300 text-gray-700 rounded-2xl font-medium transition-all hover:shadow-lg inline-flex items-center justify-center space-x-2"
+                >
+                  <Users className="w-5 h-5 text-green-600" />
+                  <span>Create Lobby</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentScreen('join-lobby')}
+                  className="group px-6 py-3 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-purple-300 text-gray-700 rounded-2xl font-medium transition-all hover:shadow-lg inline-flex items-center justify-center space-x-2"
+                >
+                  <Users className="w-5 h-5 text-purple-600" />
+                  <span>Join Lobby</span>
+                </button>
+              </div>
 
               <button
                 onClick={() => setCurrentScreen('admin')}

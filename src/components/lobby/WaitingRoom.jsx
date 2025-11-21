@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Users, Clock, LogOut } from 'lucide-react';
 import { getLobby, removeParticipant } from '../../utils/lobbyManagement';
 import StatusBadge from '../shared/StatusBadge';
@@ -6,6 +6,7 @@ import StatusBadge from '../shared/StatusBadge';
 const WaitingRoom = ({ lobbyCode, username, onStartTraining, onLeave }) => {
   const [lobby, setLobby] = useState(null);
   const [fadeIn, setFadeIn] = useState(true);
+  const hasStartedRef = useRef(false);
 
   // Poll for lobby updates
   useEffect(() => {
@@ -14,8 +15,9 @@ const WaitingRoom = ({ lobbyCode, username, onStartTraining, onLeave }) => {
       if (loadedLobby) {
         setLobby(loadedLobby);
 
-        // Check if session started
-        if (loadedLobby.status === 'in_progress') {
+        // Check if session started (only once)
+        if (loadedLobby.status === 'in_progress' && !hasStartedRef.current) {
+          hasStartedRef.current = true;
           onStartTraining();
         }
       }
@@ -24,7 +26,8 @@ const WaitingRoom = ({ lobbyCode, username, onStartTraining, onLeave }) => {
     loadLobby();
     const interval = setInterval(loadLobby, 1500);
     return () => clearInterval(interval);
-  }, [lobbyCode, onStartTraining]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lobbyCode]); // Only depend on lobbyCode
 
   const handleLeave = () => {
     if (window.confirm('Are you sure you want to leave this lobby?')) {
