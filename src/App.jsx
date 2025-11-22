@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, Mail, Lock, Users, Wifi, Usb, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Trophy, Target, BarChart3, UserPlus, LogIn } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import { saveSessionData } from './analytics';
@@ -11,15 +11,6 @@ import WaitingRoom from './components/lobby/WaitingRoom';
 import SetPinModal from './components/pin/SetPinModal';
 import EnterPinModal from './components/pin/EnterPinModal';
 import Toast from './components/shared/Toast';
-import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, Mail, Lock, Users, Wifi, Usb, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Trophy, Target, BarChart3 } from 'lucide-react';
-import AdminDashboard from './AdminDashboard';
-import { saveSessionData } from './analytics';
-import CreateLobbyForm from './components/lobby/CreateLobbyForm';
-import JoinLobbyFlow from './components/lobby/JoinLobbyFlow';
-import LobbyDashboard from './components/lobby/LobbyDashboard';
-import WaitingRoom from './components/lobby/WaitingRoom';
-import { saveLobbySession, cleanupExpiredLobbies, getLobby } from './utils/lobbyManagement';
 
 const CybersecurityTrainingApp = () => {
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -37,10 +28,9 @@ const CybersecurityTrainingApp = () => {
   const [username, setUsername] = useState(null);
   const [userRole, setUserRole] = useState(null);
 
-  // Lobby-related state
+  // Lobby-related state (aliases for backward compatibility)
   const [currentLobbyCode, setCurrentLobbyCode] = useState(null);
   const [currentUsername, setCurrentUsername] = useState(null);
-  const [userRole, setUserRole] = useState(null);
 
   // PIN modal state
   const [showSetPinModal, setShowSetPinModal] = useState(false);
@@ -490,37 +480,6 @@ const CybersecurityTrainingApp = () => {
     handleRestart();
   };
 
-  // Lobby navigation handlers
-  const handleLobbyCreated = (code) => {
-    setCurrentLobbyCode(code);
-    setUserRole('moderator');
-    setCurrentScreen('lobbyDashboard');
-  };
-
-  const handleJoined = (code, username) => {
-    setCurrentLobbyCode(code);
-    setCurrentUsername(username);
-    setUserRole('participant');
-    setCurrentScreen('waitingRoom');
-  };
-
-  const handleStartTraining = () => {
-    // Get difficulty from lobby and start training
-    const lobbyCode = sessionStorage.getItem('currentLobbyCode');
-    if (lobbyCode) {
-      const lobby = getLobby(lobbyCode);
-      if (lobby) {
-        setDifficulty(lobby.difficulty);
-      }
-    }
-    setCurrentScreen('scenario');
-    setCurrentScenarioIndex(0);
-    setScore(0);
-    setCompletedScenarios([]);
-    setScenarioResults([]);
-    setSelectedChoice(null);
-    setShowResult(false);
-  };
 
   const handleNavigateToAnalytics = () => {
     // Check if PIN is set
@@ -547,42 +506,6 @@ const CybersecurityTrainingApp = () => {
     return <AdminDashboard onBack={() => setCurrentScreen('welcome')} />;
   }
 
-  // Lobby screens
-  if (currentScreen === 'createLobby') {
-    return (
-      <CreateLobbyForm
-        onBack={() => setCurrentScreen('welcome')}
-        onLobbyCreated={handleLobbyCreated}
-      />
-    );
-  }
-
-  if (currentScreen === 'lobbyDashboard') {
-    return (
-      <LobbyDashboard
-        lobbyCode={currentLobbyCode}
-        onNavigateToAnalytics={handleNavigateToAnalytics}
-        onExit={handleExitSession}
-      />
-    );
-  }
-
-  if (currentScreen === 'joinLobby') {
-    return (
-      <JoinLobbyFlow
-        onBack={() => setCurrentScreen('welcome')}
-        onJoined={handleJoined}
-      />
-    );
-  }
-
-  if (currentScreen === 'waitingRoom') {
-    return (
-      <WaitingRoom
-        lobbyCode={currentLobbyCode}
-        username={currentUsername}
-        onStartTraining={handleStartTraining}
-        onLeave={handleExitSession}
   // Create Lobby Screen
   if (currentScreen === 'create-lobby') {
     return <CreateLobbyForm onBack={() => setCurrentScreen('welcome')} onLobbyCreated={handleLobbyCreated} />;
@@ -680,33 +603,15 @@ const CybersecurityTrainingApp = () => {
             {/* Main action buttons */}
             <div className="grid md:grid-cols-2 gap-4">
               <button
-                onClick={() => setCurrentScreen('createLobby')}
+                onClick={() => setCurrentScreen('create-lobby')}
                 className="group px-8 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium text-lg shadow-lg shadow-blue-200 transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-3"
               >
                 <UserPlus className="w-6 h-6" />
                 <span>Create Lobby</span>
               </button>
 
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setCurrentScreen('create-lobby')}
-                  className="group px-6 py-3 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-green-300 text-gray-700 rounded-2xl font-medium transition-all hover:shadow-lg inline-flex items-center justify-center space-x-2"
-                >
-                  <Users className="w-5 h-5 text-green-600" />
-                  <span>Create Lobby</span>
-                </button>
-
-                <button
-                  onClick={() => setCurrentScreen('join-lobby')}
-                  className="group px-6 py-3 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-purple-300 text-gray-700 rounded-2xl font-medium transition-all hover:shadow-lg inline-flex items-center justify-center space-x-2"
-                >
-                  <Users className="w-5 h-5 text-purple-600" />
-                  <span>Join Lobby</span>
-                </button>
-              </div>
-
               <button
-                onClick={() => setCurrentScreen('joinLobby')}
+                onClick={() => setCurrentScreen('join-lobby')}
                 className="group px-8 py-5 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-medium text-lg shadow-lg shadow-green-200 transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-3"
               >
                 <LogIn className="w-6 h-6" />
