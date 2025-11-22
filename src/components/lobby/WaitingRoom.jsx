@@ -73,10 +73,14 @@ const WaitingRoom = ({ lobbyCode, username, onStartTraining, onLeave }) => {
                 <h2 className="text-3xl font-semibold text-gray-900">{lobby.name}</h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-200">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Difficulty</p>
                   <p className="text-xl font-semibold text-gray-900 capitalize">{lobby.difficulty}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Questions</p>
+                  <p className="text-xl font-semibold text-gray-900">{lobby.questionCount || 5}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Your Username</p>

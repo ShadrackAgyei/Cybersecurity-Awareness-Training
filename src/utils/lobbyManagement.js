@@ -12,13 +12,14 @@ export const generateLobbyCode = () => {
 };
 
 // Create new lobby
-export const createLobby = (name, difficulty, moderatorName) => {
+export const createLobby = (name, difficulty, moderatorName, questionCount = 5) => {
   const code = generateLobbyCode();
   const lobby = {
     code,
     name: name || `Training Session - ${new Date().toLocaleDateString()}`,
     difficulty,
     moderatorName: moderatorName || '',
+    questionCount,
     createdAt: new Date().toISOString(),
     status: 'active',
     startedAt: null,

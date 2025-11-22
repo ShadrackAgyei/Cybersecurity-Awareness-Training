@@ -112,6 +112,10 @@ const LobbyDashboard = ({ lobbyCode, onNavigateToAnalytics, onExit }) => {
                   <span className="text-gray-600">Difficulty:</span>
                   <p className="font-semibold text-gray-900 capitalize">{lobby.difficulty}</p>
                 </div>
+                <div>
+                  <span className="text-gray-600">Questions:</span>
+                  <p className="font-semibold text-gray-900">{lobby.questionCount || 5} scenarios</p>
+                </div>
                 {lobby.moderatorName && (
                   <div>
                     <span className="text-gray-600">Moderator:</span>

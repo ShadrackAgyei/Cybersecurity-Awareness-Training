@@ -32,6 +32,9 @@ const CybersecurityTrainingApp = () => {
   const [currentLobbyCode, setCurrentLobbyCode] = useState(null);
   const [currentUsername, setCurrentUsername] = useState(null);
 
+  // Session scenarios (randomly selected based on questionCount)
+  const [sessionScenarios, setSessionScenarios] = useState([]);
+
   // PIN modal state
   const [showSetPinModal, setShowSetPinModal] = useState(false);
   const [showEnterPinModal, setShowEnterPinModal] = useState(false);
@@ -170,6 +173,60 @@ const CybersecurityTrainingApp = () => {
             consequence: 'The scammer used convincing fake information to gain your trust and steal data.'
           }
         ]
+      },
+      {
+        id: 10,
+        icon: Shield,
+        title: 'Personal Information Online',
+        category: 'data-privacy',
+        situation: 'A fun personality quiz app is trending on social media. It asks for your birthdate, mother\'s maiden name, first pet\'s name, and hometown to generate your "cybersecurity personality". What should you do?',
+        choices: [
+          {
+            text: 'Fill it out - it\'s just a harmless quiz',
+            isCorrect: false,
+            explanation: 'These questions are common security questions for password recovery. Sharing this information publicly can help attackers access your accounts or steal your identity.',
+            consequence: 'Your answers were collected and used to compromise your email account recovery questions.'
+          },
+          {
+            text: 'Skip it and avoid sharing personal information on such quizzes',
+            isCorrect: true,
+            explanation: 'Excellent judgment! Many "fun" quizzes are data harvesting schemes. They collect answers to common security questions, build profiles, or gather data for social engineering attacks.',
+            consequence: 'You protected your personal information and avoided a data harvesting scheme.'
+          },
+          {
+            text: 'Fill it out but use fake information',
+            isCorrect: false,
+            explanation: 'While better than using real data, engaging with these apps still grants them access to your social media profile, friends list, and other permissions. Best to avoid entirely.',
+            consequence: 'The app gained access to your profile data and friend list for marketing purposes.'
+          }
+        ]
+      },
+      {
+        id: 11,
+        icon: Lock,
+        title: 'Device Security',
+        category: 'device-security',
+        situation: 'You\'re stepping away from your work laptop for a quick coffee break. Your computer is in a shared office space. What should you do?',
+        choices: [
+          {
+            text: 'Leave it unlocked - you\'ll only be gone 5 minutes',
+            isCorrect: false,
+            explanation: 'Even brief moments are enough for someone to access sensitive data, install malware, or send unauthorized emails from your account. Always lock your device.',
+            consequence: 'A colleague accidentally sent an email from your account, and confidential files were exposed.'
+          },
+          {
+            text: 'Lock your screen (Windows+L or Ctrl+Cmd+Q)',
+            isCorrect: true,
+            explanation: 'Perfect! Locking your screen takes 2 seconds and prevents unauthorized access. This is a critical security practice, especially with confidential information or company resources.',
+            consequence: 'Your device and data remained secure while you were away.'
+          },
+          {
+            text: 'Close sensitive documents but leave it unlocked',
+            isCorrect: false,
+            explanation: 'Simply closing documents isn\'t enough. Someone could still access your email, files, or install software. Always lock the screen when leaving your device unattended.',
+            consequence: 'Someone used your unlocked computer to browse sensitive company files.'
+          }
+        ]
       }
     ],
     intermediate: [
@@ -251,6 +308,60 @@ const CybersecurityTrainingApp = () => {
             isCorrect: false,
             explanation: 'While closing the account helps eventually, the data is already exposed. First change passwords everywhere to prevent immediate exploitation.',
             consequence: 'While closing the account, attackers used your exposed password on other sites first.'
+          }
+        ]
+      },
+      {
+        id: 12,
+        icon: Shield,
+        title: 'Cloud Storage Security',
+        category: 'cloud-security',
+        situation: 'You need to share a confidential project document with your team. You have several options for sharing the 50MB file. Which is the most secure approach?',
+        choices: [
+          {
+            text: 'Email it to everyone on the team',
+            isCorrect: false,
+            explanation: 'Email is not encrypted by default and leaves copies on multiple servers. Large files may be rejected, and you lose control over who forwards it. Email is not suitable for confidential documents.',
+            consequence: 'The email was forwarded outside the team, and the document was leaked to competitors.'
+          },
+          {
+            text: 'Upload to company-approved cloud storage with access controls and expiration',
+            isCorrect: true,
+            explanation: 'Excellent! Company-approved cloud services offer encryption, access controls, audit logs, and expiration dates. You can revoke access anytime and track who viewed the document.',
+            consequence: 'The document was shared securely with full audit trail and controlled access.'
+          },
+          {
+            text: 'Use a personal Dropbox/Google Drive link',
+            isCorrect: false,
+            explanation: 'Personal cloud services may not meet company security policies. You lack enterprise controls, audit logs, and compliance features. Company data should stay on company-approved platforms.',
+            consequence: 'Your personal account was compromised, exposing the confidential document publicly.'
+          }
+        ]
+      },
+      {
+        id: 13,
+        icon: Users,
+        title: 'Social Media Privacy',
+        category: 'data-privacy',
+        situation: 'A recruiter on LinkedIn sends you a connection request and asks detailed questions about your current company\'s upcoming projects, tech stack, and team structure. What should you do?',
+        choices: [
+          {
+            text: 'Answer their questions to build a good relationship',
+            isCorrect: false,
+            explanation: 'This could be social engineering or competitive intelligence gathering. Sharing internal company details, even seemingly harmless information, can be pieced together to compromise security.',
+            consequence: 'The "recruiter" was actually gathering intelligence for a competitor targeting your company.'
+          },
+          {
+            text: 'Politely decline to discuss internal company details',
+            isCorrect: true,
+            explanation: 'Perfect! Professional networking shouldn\'t require sharing confidential information. Legitimate recruiters understand boundaries. Protect your company\'s information even in casual conversations.',
+            consequence: 'You maintained professionalism while protecting company information.'
+          },
+          {
+            text: 'Check if they\'re real, then share general information',
+            isCorrect: false,
+            explanation: 'Even verified recruiters shouldn\'t receive internal company details. "General" information can still be valuable for social engineering, competitive analysis, or targeted attacks.',
+            consequence: 'The information you shared was used to craft convincing phishing emails targeting your colleagues.'
           }
         ]
       }
@@ -336,11 +447,79 @@ const CybersecurityTrainingApp = () => {
             consequence: 'While waiting for IT response, you accidentally clicked the link, compromising your account.'
           }
         ]
+      },
+      {
+        id: 14,
+        icon: Shield,
+        title: 'Supply Chain Security',
+        category: 'device-security',
+        situation: 'Your company is evaluating new collaboration software. The vendor offers a generous free trial and requests admin access to your company\'s cloud environment "to simplify setup and integration". What\'s the best security approach?',
+        choices: [
+          {
+            text: 'Grant admin access - it\'s a legitimate vendor and will save time',
+            isCorrect: false,
+            explanation: 'Never grant admin access without thorough vetting. Supply chain attacks often start with trusted vendors. Even legitimate companies can be compromised, giving attackers access through their credentials.',
+            consequence: 'The vendor\'s systems were later compromised, giving attackers admin access to your entire environment.'
+          },
+          {
+            text: 'Require security assessment, limited permissions, and IT review before any access',
+            isCorrect: true,
+            explanation: 'Excellent! Follow the principle of least privilege. Vendors should only get minimal access needed, after security vetting, compliance review, and approval. Use sandbox environments for testing.',
+            consequence: 'Your security team discovered the vendor had inadequate security practices and prevented a potential breach.'
+          },
+          {
+            text: 'Use a separate test environment with dummy data for the trial',
+            isCorrect: false,
+            explanation: 'While better than production access, this alone isn\'t sufficient. Even test environments can be pivot points. Still need security assessment, limited access, and monitoring. Never skip vendor vetting.',
+            consequence: 'Attackers compromised the test environment and used it to launch attacks on production systems.'
+          }
+        ]
+      },
+      {
+        id: 15,
+        icon: AlertTriangle,
+        title: 'Zero-Day Vulnerability',
+        category: 'incident-response',
+        situation: 'News breaks about a critical zero-day vulnerability in software your company uses extensively. No patch is available yet, but attackers are actively exploiting it. You\'re on the security team. What\'s the priority response?',
+        choices: [
+          {
+            text: 'Wait for the official patch - workarounds might cause more problems',
+            isCorrect: false,
+            explanation: 'With active exploitation and no patch, waiting is dangerous. Zero-day attacks can cause massive damage quickly. Immediate risk mitigation is critical even before patches are available.',
+            consequence: 'While waiting, attackers exploited the vulnerability and exfiltrated sensitive customer data.'
+          },
+          {
+            text: 'Implement immediate mitigations: isolate affected systems, apply vendor workarounds, enhance monitoring',
+            isCorrect: true,
+            explanation: 'Perfect incident response! Zero-day situations require immediate action: implement vendor-recommended mitigations, isolate vulnerable systems, increase monitoring, restrict access, and prepare for patching. Speed is critical.',
+            consequence: 'Your quick response prevented exploitation. When the patch released, you deployed it immediately with minimal exposure window.'
+          },
+          {
+            text: 'Disable the affected software completely until a patch is available',
+            isCorrect: false,
+            explanation: 'While protective, completely disabling critical software may not be feasible and could halt business operations. Better to implement layered mitigations: network segmentation, access controls, monitoring, and vendor workarounds while maintaining necessary functions.',
+            consequence: 'Disabling the software caused business disruption. After complaints, it was re-enabled before mitigation, leading to compromise.'
+          }
+        ]
       }
     ]
   };
 
-  const getCurrentScenarios = () => scenarios[difficulty];
+  // Helper function to randomly select N scenarios from a pool
+  const selectRandomScenarios = (scenarioPool, count) => {
+    const shuffled = [...scenarioPool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, scenarioPool.length));
+  };
+
+  const getCurrentScenarios = () => {
+    // Use sessionScenarios if available (for lobby-based sessions)
+    if (sessionScenarios.length > 0) {
+      return sessionScenarios;
+    }
+    // Otherwise return all scenarios for the difficulty level
+    return scenarios[difficulty];
+  };
+
   const currentScenario = getCurrentScenarios()[currentScenarioIndex];
   const totalScenarios = getCurrentScenarios().length;
   const progressPercentage = (completedScenarios.length / totalScenarios) * 100;
@@ -435,10 +614,18 @@ const CybersecurityTrainingApp = () => {
   };
 
   const handleStartTrainingFromLobby = useCallback(() => {
-    // Get difficulty from lobby
+    // Get difficulty and questionCount from lobby
     const lobby = getLobby(lobbyCode);
     if (lobby) {
-      setDifficulty(lobby.difficulty);
+      const difficultyLevel = lobby.difficulty;
+      const questionCount = lobby.questionCount || 5; // Default to 5 if not set
+
+      // Select random scenarios based on questionCount
+      const availableScenarios = scenarios[difficultyLevel];
+      const selectedScenarios = selectRandomScenarios(availableScenarios, questionCount);
+
+      setDifficulty(difficultyLevel);
+      setSessionScenarios(selectedScenarios);
       setCurrentScenarioIndex(0);
       setScore(0);
       setCompletedScenarios([]);
